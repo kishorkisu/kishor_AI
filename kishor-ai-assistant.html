@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kishor – AI Assistant</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --bg: #070b14;
+    --panel: #0d1525;
+    --border: #1a2f52;
+    --accent: #00d4ff;
+    --accent2: #0066ff;
+    --accent3: #00ff88;
+    --gold: #ffd166;
+    --text: #c8dff5;
+    --text-dim: #4a6a90;
+    --danger: #ff4466;
+    --glow: 0 0 20px rgba(0,212,255,0.4);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Exo 2', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(0,102,255,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(0,212,255,0.05) 0%, transparent 50%);
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 300px 1fr 270px;
+    grid-template-rows: auto 1fr auto;
+    height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    grid-column: 1/-1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(13,21,37,0.97);
+    backdrop-filter: blur(20px);
+  }
+
+  .header-logo { display:flex; align-items:center; gap:12px; }
+
+  .logo-icon {
+    width:38px; height:38px;
+    border:2px solid var(--accent);
+    border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Share Tech Mono',monospace;
+    color:var(--accent); font-size:18px; font-weight:bold;
+    box-shadow:var(--glow);
+    animation:logoPulse 3s ease-in-out infinite;
+  }
+  @keyframes logoPulse { 0%,100%{box-shadow:0 0 15px rgba(0,212,255,0.4)} 50%{box-shadow:0 0 30px rgba(0,212,255,0.8)} }
+
+  .logo-text h1 { font-family:'Rajdhani',sans-serif; font-size:20px; font-weight:700; color:#fff; letter-spacing:3px; text-transform:uppercase; }
+  .logo-text span { font-size:10px; color:var(--accent); letter-spacing:4px; font-family:'Share Tech Mono',monospace; }
+
+  .header-status { display:flex; align-items:center; gap:16px; }
+
+  .status-pill {
+    display:flex; align-items:center; gap:7px;
+    padding:5px 12px; border-radius:20px; border:1px solid;
+    font-size:11px; font-family:'Share Tech Mono',monospace; letter-spacing:1px;
+  }
+  .status-pill.online  { border-color:var(--accent3); color:var(--accent3); }
+  .status-pill.warning { border-color:var(--gold); color:var(--gold); }
+  .status-pill.offline { border-color:var(--text-dim); color:var(--text-dim); }
+  .status-dot { width:7px; height:7px; border-radius:50%; background:currentColor; animation:blink 1.5s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .header-time { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--text-dim); }
+
+  /* LEFT PANEL */
+  .left-panel {
+    border-right:1px solid var(--border);
+    background:rgba(13,21,37,0.7);
+    display:flex; flex-direction:column; align-items:center;
+    padding:24px 16px; gap:18px; overflow-y:auto;
+  }
+
+  .avatar-container { position:relative; width:180px; height:180px; }
+
+  .ring {
+    position:absolute; border-radius:50%; border:1px solid transparent;
+    animation:rotate linear infinite;
+  }
+  .ring-1 { inset:0; border-top-color:var(--accent); border-right-color:var(--accent); animation-duration:4s; }
+  .ring-2 { inset:-12px; border-bottom-color:var(--accent2); border-left-color:var(--accent2); animation-duration:7s; animation-direction:reverse; }
+  .ring-3 { inset:-24px; border-top-color:rgba(0,212,255,0.15); animation-duration:12s; }
+  @keyframes rotate { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+  .avatar-photo {
+    position:relative; width:180px; height:180px;
+    border-radius:50%; overflow:hidden;
+    border:3px solid var(--accent);
+    box-shadow:0 0 30px rgba(0,212,255,0.5), 0 0 60px rgba(0,212,255,0.15);
+  }
+  .avatar-photo img { width:100%; height:100%; object-fit:cover; object-position:top center; }
+  .avatar-photo::after {
+    content:''; position:absolute; inset:0; border-radius:50%;
+    background:linear-gradient(135deg,rgba(0,212,255,0.08) 0%,transparent 40%,rgba(0,102,255,0.08) 100%);
+    pointer-events:none;
+  }
+  .scanline { position:absolute; inset:0; border-radius:50%; overflow:hidden; pointer-events:none; }
+  .scanline::after {
+    content:''; position:absolute; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,transparent,rgba(0,212,255,0.6),transparent);
+    animation:scan 3s linear infinite; top:-3px;
+  }
+  @keyframes scan { from{top:-3px} to{top:100%} }
+
+  .avatar-name { text-align:center; }
+  .avatar-name h2 { font-family:'Rajdhani',sans-serif; font-size:26px; font-weight:700; letter-spacing:4px; color:#fff; text-transform:uppercase; }
+  .avatar-name p  { font-size:10px; color:var(--accent); letter-spacing:3px; font-family:'Share Tech Mono',monospace; margin-top:3px; }
+
+  /* Agent connection badge */
+  .agent-badge {
+    width:100%; padding:10px 14px;
+    border-radius:10px; border:1px solid var(--border);
+    background:rgba(0,0,0,0.3);
+    display:flex; align-items:center; gap:10px;
+    font-size:12px; font-family:'Share Tech Mono',monospace;
+  }
+  .agent-badge.connected { border-color:var(--accent3); color:var(--accent3); }
+  .agent-badge.disconnected { border-color:var(--danger); color:var(--danger); }
+
+  .capabilities { width:100%; display:flex; flex-direction:column; gap:7px; }
+  .cap-label { font-size:10px; letter-spacing:3px; color:var(--text-dim); font-family:'Share Tech Mono',monospace; text-transform:uppercase; margin-bottom:3px; }
+  .cap-item {
+    display:flex; align-items:center; gap:10px;
+    padding:7px 11px; border-radius:7px;
+    background:rgba(0,212,255,0.04); border:1px solid rgba(0,212,255,0.1);
+    font-size:12px; color:var(--text); transition:all 0.3s;
+  }
+  .cap-item:hover { border-color:var(--accent); background:rgba(0,212,255,0.09); color:#fff; }
+
+  /* MAIN PANEL */
+  .main-panel {
+    display:flex; flex-direction:column;
+    padding:18px; gap:16px;
+    overflow-y:auto; max-height:calc(100vh - 100px);
+  }
+
+  /* Voice Section */
+  .voice-section {
+    text-align:center; padding:20px;
+    border:1px solid var(--border); border-radius:14px;
+    background:rgba(13,21,37,0.8); position:relative; overflow:hidden;
+  }
+  .voice-section::before {
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(ellipse at 50% 0%,rgba(0,212,255,0.07) 0%,transparent 70%);
+    pointer-events:none;
+  }
+
+  .wake-word {
+    font-family:'Share Tech Mono',monospace; color:var(--gold); font-size:14px;
+    letter-spacing:2px; background:rgba(255,209,102,0.08); padding:4px 12px;
+    border-radius:6px; border:1px solid rgba(255,209,102,0.2); display:inline-block; margin-bottom:14px;
+  }
+
+  .voice-btn {
+    position:relative; width:90px; height:90px; border-radius:50%; border:none;
+    background:radial-gradient(circle,rgba(0,212,255,0.18) 0%,rgba(0,212,255,0.04) 70%);
+    cursor:pointer; margin:0 auto 14px; display:flex; align-items:center; justify-content:center;
+    transition:all 0.3s; border:2px solid rgba(0,212,255,0.3);
+  }
+  .voice-btn:hover { transform:scale(1.06); border-color:var(--accent); box-shadow:var(--glow); }
+  .voice-btn.active { border-color:var(--accent3); box-shadow:0 0 28px rgba(0,255,136,0.5); animation:vPulse 0.8s ease-in-out infinite; }
+  .voice-btn.processing { border-color:var(--gold); box-shadow:0 0 28px rgba(255,209,102,0.4); }
+  @keyframes vPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+  .mic-icon { font-size:32px; pointer-events:none; }
+
+  .voice-waves { display:flex; align-items:center; justify-content:center; gap:4px; height:36px; margin-bottom:10px; }
+  .wave-bar { width:4px; background:var(--accent); border-radius:2px; animation:wBounce 1.2s ease-in-out infinite; opacity:0.3; }
+  .wave-bar:nth-child(1){animation-delay:0s;height:8px}
+  .wave-bar:nth-child(2){animation-delay:0.1s;height:16px}
+  .wave-bar:nth-child(3){animation-delay:0.2s;height:28px}
+  .wave-bar:nth-child(4){animation-delay:0.3s;height:36px}
+  .wave-bar:nth-child(5){animation-delay:0.4s;height:28px}
+  .wave-bar:nth-child(6){animation-delay:0.5s;height:16px}
+  .wave-bar:nth-child(7){animation-delay:0.6s;height:8px}
+  .wave-bar.active { opacity:1; }
+  @keyframes wBounce { 0%,100%{transform:scaleY(0.4);opacity:0.3} 50%{transform:scaleY(1);opacity:0.7} }
+
+  .voice-status-text { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--accent); letter-spacing:2px; min-height:18px; }
+
+  .transcript-box {
+    margin-top:12px; padding:10px 14px;
+    background:rgba(0,0,0,0.4); border-radius:9px; border:1px solid var(--border);
+    font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--gold);
+    min-height:40px; text-align:left; display:flex; align-items:center;
+  }
+  .transcript-prefix { color:var(--text-dim); margin-right:8px; font-size:10px; }
+
+  /* Chat */
+  .chat-section {
+    border:1px solid var(--border); border-radius:14px;
+    background:rgba(13,21,37,0.8); display:flex; flex-direction:column; flex:1; overflow:hidden;
+  }
+  .chat-header {
+    padding:12px 16px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:9px;
+    font-size:10px; letter-spacing:3px; color:var(--text-dim);
+    font-family:'Share Tech Mono',monospace; text-transform:uppercase;
+  }
+  .chat-header::before {
+    content:''; width:7px; height:7px; border-radius:50%;
+    background:var(--accent3); box-shadow:0 0 7px var(--accent3); animation:blink 2s ease-in-out infinite;
+  }
+
+  .chat-log {
+    padding:14px; flex:1; overflow-y:auto; display:flex; flex-direction:column;
+    gap:12px; max-height:280px;
+    scrollbar-width:thin; scrollbar-color:var(--border) transparent;
+  }
+  .chat-msg { display:flex; gap:10px; align-items:flex-start; animation:msgIn 0.3s ease-out; }
+  .chat-msg.user { flex-direction:row-reverse; }
+  @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .msg-avatar { width:30px; height:30px; border-radius:50%; border:1px solid var(--accent); overflow:hidden; flex-shrink:0; }
+  .msg-avatar img { width:100%; height:100%; object-fit:cover; object-position:top; }
+  .msg-user-icon { width:30px; height:30px; border-radius:50%; background:var(--accent2); border:1px solid var(--accent); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+
+  .msg-bubble { max-width:78%; padding:9px 13px; border-radius:10px; font-size:13px; line-height:1.6; white-space:pre-wrap; }
+  .chat-msg.kishor .msg-bubble { background:rgba(0,102,255,0.1); border:1px solid rgba(0,212,255,0.18); color:var(--text); border-radius:3px 10px 10px 10px; }
+  .chat-msg.user .msg-bubble { background:rgba(0,212,255,0.09); border:1px solid rgba(0,212,255,0.14); color:var(--text); border-radius:10px 3px 10px 10px; }
+
+  .msg-label { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text-dim); margin-bottom:3px; letter-spacing:1px; }
+
+  /* Result badge */
+  .result-badge {
+    display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px;
+    font-family:'Share Tech Mono',monospace; margin-bottom:5px;
+    background:rgba(0,255,136,0.1); border:1px solid var(--accent3); color:var(--accent3);
+  }
+  .result-badge.error { background:rgba(255,68,102,0.1); border-color:var(--danger); color:var(--danger); }
+
+  .input-area {
+    display:flex; gap:9px; padding:12px 14px;
+    border-top:1px solid var(--border); background:rgba(7,11,20,0.8);
+  }
+  .cmd-input {
+    flex:1; background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:7px;
+    padding:9px 14px; color:var(--text); font-family:'Share Tech Mono',monospace; font-size:12px; outline:none; transition:border-color 0.3s;
+  }
+  .cmd-input:focus { border-color:var(--accent); box-shadow:0 0 10px rgba(0,212,255,0.18); }
+  .cmd-input::placeholder { color:var(--text-dim); }
+
+  .send-btn {
+    padding:9px 18px; background:linear-gradient(135deg,var(--accent2),var(--accent));
+    border:none; border-radius:7px; color:#fff; cursor:pointer;
+    font-family:'Rajdhani',sans-serif; font-size:13px; font-weight:600; letter-spacing:2px;
+    transition:all 0.3s; text-transform:uppercase;
+  }
+  .send-btn:hover { transform:translateY(-1px); box-shadow:var(--glow); }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    border-left:1px solid var(--border); background:rgba(13,21,37,0.7);
+    padding:16px 14px; display:flex; flex-direction:column; gap:16px; overflow-y:auto;
+  }
+  .panel-section { border:1px solid var(--border); border-radius:10px; overflow:hidden; background:rgba(7,11,20,0.6); }
+  .panel-section-header {
+    padding:9px 13px; background:rgba(0,212,255,0.05); border-bottom:1px solid var(--border);
+    font-size:10px; letter-spacing:3px; color:var(--accent); font-family:'Share Tech Mono',monospace; text-transform:uppercase;
+  }
+  .panel-section-body { padding:11px 13px; }
+
+  .metric-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; font-size:12px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .metric-row:last-child { border-bottom:none; }
+  .metric-label { color:var(--text-dim); }
+  .metric-value { font-family:'Share Tech Mono',monospace; color:var(--accent3); }
+
+  .bar-wrap { height:3px; background:rgba(255,255,255,0.07); border-radius:2px; margin-top:7px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--accent2),var(--accent)); transition:width 0.6s; }
+
+  .cmd-list { display:flex; flex-direction:column; gap:5px; }
+  .cmd-chip {
+    padding:6px 10px; border-radius:6px; border:1px solid var(--border);
+    font-size:11px; font-family:'Share Tech Mono',monospace; color:var(--text-dim);
+    cursor:pointer; transition:all 0.3s; display:flex; align-items:center; gap:7px;
+  }
+  .cmd-chip:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,212,255,0.06); }
+
+  /* FOOTER */
+  .footer {
+    grid-column:1/-1; padding:9px 24px;
+    border-top:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:center;
+    background:rgba(7,11,20,0.97);
+    font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--text-dim);
+  }
+  .footer-right { display:flex; gap:18px; }
+
+  /* Toast */
+  .toast {
+    position:fixed; bottom:55px; right:20px;
+    padding:10px 18px; background:rgba(13,21,37,0.97);
+    border:1px solid var(--accent3); border-radius:9px;
+    color:var(--accent3); font-family:'Share Tech Mono',monospace; font-size:12px;
+    box-shadow:0 0 18px rgba(0,255,136,0.3); z-index:100;
+    animation:toastIn 0.3s ease-out; display:none;
+  }
+  @keyframes toastIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .typing-dots { display:flex; gap:4px; padding:4px 0; }
+  .typing-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:tBounce 1.2s ease-in-out infinite; }
+  .typing-dot:nth-child(2){animation-delay:0.2s} .typing-dot:nth-child(3){animation-delay:0.4s}
+  @keyframes tBounce { 0%,100%{transform:translateY(0);opacity:0.3} 50%{transform:translateY(-6px);opacity:1} }
+
+  ::-webkit-scrollbar { width:3px; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  @media(max-width:900px) {
+    .app { grid-template-columns:1fr; }
+    .left-panel,.right-panel { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-icon">K</div>
+      <div class="logo-text">
+        <h1>Kishor</h1>
+        <span>AI DESKTOP AGENT</span>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="status-pill online"><div class="status-dot"></div>SYSTEM ONLINE</div>
+      <div class="status-pill" id="agentPill" style="border-color:var(--text-dim);color:var(--text-dim)">
+        <div class="status-dot"></div><span id="agentPillText">AGENT OFFLINE</span>
+      </div>
+      <div class="header-time" id="clock">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- LEFT PANEL -->
+  <aside class="left-panel">
+    <div class="avatar-container">
+      <div class="ring ring-1"></div>
+      <div class="ring ring-2"></div>
+      <div class="ring ring-3"></div>
+      <div class="avatar-photo">
+        <img id="avatarImg" src="" alt="Kishor">
+        <div class="scanline"></div>
+      </div>
+    </div>
+
+    <div class="avatar-name">
+      <h2>Kishor</h2>
+      <p>BHANUSHALI · AI AGENT</p>
+    </div>
+
+    <div class="agent-badge disconnected" id="agentBadge">
+      <span>🔌</span>
+      <span id="agentBadgeText">Desktop Agent: Offline</span>
+    </div>
+
+    <div class="capabilities">
+      <div class="cap-label">// Core Capabilities</div>
+      <div class="cap-item">🎙️ Voice Command Recognition</div>
+      <div class="cap-item">🖥️ Desktop App Control</div>
+      <div class="cap-item">🌐 Internet Navigation</div>
+      <div class="cap-item">📁 File Management</div>
+      <div class="cap-item">📧 Email Operations</div>
+      <div class="cap-item">📸 Screenshot & Screen Control</div>
+      <div class="cap-item">⌨️ Keyboard & Mouse Automation</div>
+      <div class="cap-item">🔊 Volume & System Control</div>
+    </div>
+  </aside>
+
+  <!-- MAIN PANEL -->
+  <main class="main-panel">
+
+    <div class="voice-section">
+      <div style="font-size:10px;letter-spacing:4px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;margin-bottom:12px;text-transform:uppercase;">// Voice Activation</div>
+      <div class="wake-word">「 Hi Kishor 」</div>
+
+      <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+        <span class="mic-icon" id="micIcon">🎙️</span>
+      </button>
+
+      <div class="voice-waves">
+        <div class="wave-bar" id="w1"></div><div class="wave-bar" id="w2"></div>
+        <div class="wave-bar" id="w3"></div><div class="wave-bar" id="w4"></div>
+        <div class="wave-bar" id="w5"></div><div class="wave-bar" id="w6"></div>
+        <div class="wave-bar" id="w7"></div>
+      </div>
+
+      <div class="voice-status-text" id="voiceStatusText">Click mic or say "Hi Kishor" to activate</div>
+
+      <div class="transcript-box">
+        <span class="transcript-prefix">&gt;</span>
+        <span id="transcriptText">Waiting for voice input...</span>
+      </div>
+    </div>
+
+    <div class="chat-section">
+      <div class="chat-header">Live Interaction Log</div>
+      <div class="chat-log" id="chatLog">
+        <div class="chat-msg kishor">
+          <div class="msg-avatar"><img id="chatAvatarImg" src="" alt="K" onerror="this.parentElement.innerHTML='<div style=\'width:30px;height:30px;border-radius:50%;background:#0066ff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:14px;\'>K</div>'"></div>
+          <div>
+            <div class="msg-label">KISHOR · READY</div>
+            <div class="msg-bubble">Namaste! I'm Kishor — your AI desktop assistant. Say <strong>"Hi Kishor"</strong> to activate, or type a command below. Start <code>kishor_server.py</code> to enable full desktop control.</div>
+          </div>
+        </div>
+      </div>
+      <div class="input-area">
+        <input type="text" class="cmd-input" id="cmdInput" placeholder='Type command or "Hi Kishor"...' onkeypress="handleKey(event)">
+        <button class="send-btn" onclick="sendTextCommand()">SEND</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside class="right-panel">
+
+    <div class="panel-section">
+      <div class="panel-section-header">// Live System Stats</div>
+      <div class="panel-section-body">
+        <div class="metric-row"><span class="metric-label">Agent</span><span class="metric-value" id="mAgent">OFFLINE</span></div>
+        <div class="metric-row"><span class="metric-label">CPU</span><span class="metric-value" id="mCpu">--</span></div>
+        <div class="metric-row"><span class="metric-label">RAM</span><span class="metric-value" id="mRam">--</span></div>
+        <div class="metric-row"><span class="metric-label">Tasks Done</span><span class="metric-value" id="taskCount">0</span></div>
+        <div class="metric-row"><span class="metric-label">Session</span><span class="metric-value" id="sessionTime">00:00</span></div>
+        <div class="bar-wrap"><div class="bar-fill" id="cpuBar" style="width:0%"></div></div>
+        <div style="font-size:9px;color:var(--text-dim);margin-top:5px;font-family:'Share Tech Mono',monospace;" id="cpuLabel">CPU LOAD</div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-header">// Quick Commands</div>
+      <div class="panel-section-body">
+        <div class="cmd-list">
+          <div class="cmd-chip" onclick="runCmd('open browser')">🌐 Open Browser</div>
+          <div class="cmd-chip" onclick="runCmd('search for latest news today')">🔍 Web Search</div>
+          <div class="cmd-chip" onclick="runCmd('open email')">📧 Open Email</div>
+          <div class="cmd-chip" onclick="runCmd('open file manager')">📁 File Manager</div>
+          <div class="cmd-chip" onclick="runCmd('take screenshot')">📸 Screenshot</div>
+          <div class="cmd-chip" onclick="runCmd('what is the time and date')">🕐 Time & Date</div>
+          <div class="cmd-chip" onclick="runCmd('open calculator')">🧮 Calculator</div>
+          <div class="cmd-chip" onclick="runCmd('system info')">💻 System Info</div>
+          <div class="cmd-chip" onclick="runCmd('get battery status')">🔋 Battery</div>
+          <div class="cmd-chip" onclick="runCmd('volume up')">🔊 Volume Up</div>
+          <div class="cmd-chip" onclick="runCmd('open youtube')">▶️ YouTube</div>
+          <div class="cmd-chip" onclick="runCmd('lock screen')">🔒 Lock Screen</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-header">// Recent Tasks</div>
+      <div class="panel-section-body">
+        <div id="recentTasks" style="font-size:10px;color:var(--text-dim);font-family:'Share Tech Mono',monospace;line-height:2;">No tasks yet...</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <footer class="footer">
+    <span>KISHOR AI AGENT v2.0 · BHANUSHALI SYSTEMS · WS: ws://localhost:8765</span>
+    <div class="footer-right">
+      <span>VOICE: WEB SPEECH API</span>
+      <span id="footerDate">--</span>
+    </div>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+// AVATAR — embedded SVG portrait
+// ════════════════════════════════════════════
+const AVATAR_SVG = `data:image/svg+xml;base64,` + btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <clipPath id="c"><circle cx="100" cy="100" r="100"/></clipPath>
+    <radialGradient id="sg" cx="50%" cy="40%" r="60%"><stop offset="0%" stop-color="#d4956a"/><stop offset="100%" stop-color="#b8713a"/></radialGradient>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1a2f52"/><stop offset="100%" stop-color="#070b14"/></radialGradient>
+  </defs>
+  <g clip-path="url(#c)">
+    <rect width="200" height="200" fill="url(#bg)"/>
+    <rect x="10" y="150" width="180" height="60" fill="#1e3a7a"/>
+    <rect x="75" y="148" width="50" height="60" fill="#d8e8c0"/>
+    <polygon points="100,148 60,145 45,200 80,200" fill="#1a3270"/>
+    <polygon points="100,148 140,145 155,200 120,200" fill="#1a3270"/>
+    <rect x="85" y="130" width="30" height="25" fill="url(#sg)"/>
+    <ellipse cx="100" cy="105" rx="42" ry="48" fill="url(#sg)"/>
+    <ellipse cx="100" cy="65" rx="42" ry="20" fill="#1a1005"/>
+    <rect x="58" y="65" width="84" height="15" fill="#1a1005"/>
+    <ellipse cx="58" cy="108" rx="7" ry="10" fill="#c07840"/>
+    <ellipse cx="142" cy="108" rx="7" ry="10" fill="#c07840"/>
+    <ellipse cx="83" cy="102" rx="10" ry="8" fill="white"/>
+    <ellipse cx="117" cy="102" rx="10" ry="8" fill="white"/>
+    <ellipse cx="83" cy="103" rx="6" ry="6" fill="#2a1a0a"/>
+    <ellipse cx="117" cy="103" rx="6" ry="6" fill="#2a1a0a"/>
+    <ellipse cx="84" cy="102" rx="2" ry="2" fill="#000"/>
+    <ellipse cx="118" cy="102" rx="2" ry="2" fill="#000"/>
+    <ellipse cx="85" cy="100" rx="1.5" ry="1.5" fill="white" opacity="0.8"/>
+    <ellipse cx="119" cy="100" rx="1.5" ry="1.5" fill="white" opacity="0.8"/>
+    <rect x="70" y="95" width="23" height="16" rx="4" fill="none" stroke="#555" stroke-width="2.2"/>
+    <rect x="107" y="95" width="23" height="16" rx="4" fill="none" stroke="#555" stroke-width="2.2"/>
+    <line x1="93" y1="102" x2="107" y2="102" stroke="#555" stroke-width="1.8"/>
+    <line x1="58" y1="100" x2="70" y2="100" stroke="#555" stroke-width="1.8"/>
+    <line x1="130" y1="100" x2="142" y2="100" stroke="#555" stroke-width="1.8"/>
+    <path d="M72 93 Q83 88 93 92" stroke="#2a1a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M107 92 Q117 88 128 93" stroke="#2a1a0a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M100 108 Q96 118 93 122 Q100 125 107 122 Q104 118 100 108" fill="#c07840"/>
+    <path d="M88 132 Q100 137 112 132" stroke="#8a4a20" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>`);
+
+document.getElementById('avatarImg').src = AVATAR_SVG;
+document.getElementById('chatAvatarImg').src = AVATAR_SVG;
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let isListening = false, isActivated = false;
+let recognition = null;
+let ws = null, wsConnected = false;
+let taskCount = 0;
+let recentTasks = [];
+let sessionStart = Date.now();
+
+// ════════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════════
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clock').textContent = n.toLocaleTimeString('en-IN');
+  document.getElementById('footerDate').textContent = n.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  const e = Math.floor((Date.now()-sessionStart)/1000);
+  document.getElementById('sessionTime').textContent = `${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`;
+}
+setInterval(updateClock,1000); updateClock();
+
+// ════════════════════════════════════════════
+// WEBSOCKET — connect to Python agent
+// ════════════════════════════════════════════
+function connectAgent() {
+  try {
+    ws = new WebSocket('ws://localhost:8765');
+
+    ws.onopen = () => {
+      wsConnected = true;
+      setAgentStatus(true);
+      showToast('🟢 Desktop Agent Connected!');
+      addMsg('kishor', '✅ Desktop Agent connected! I can now fully control your computer. What shall I do?', true);
+    };
+
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === 'stats') {
+          if (data.cpu !== undefined) {
+            document.getElementById('mCpu').textContent = data.cpu.toFixed(1) + '%';
+            document.getElementById('cpuBar').style.width = data.cpu + '%';
+            document.getElementById('cpuLabel').textContent = `CPU LOAD · ${data.cpu.toFixed(1)}%`;
+          }
+          if (data.ram !== undefined) {
+            document.getElementById('mRam').textContent = data.ram.toFixed(1) + '%';
+          }
+        } else if (data.type === 'result') {
+          removeTyping();
+          addMsg('kishor', data.result, true);
+          speak(data.result.replace(/[✅⚠️📁💻🔋🔊📧📸🌤️🤔🎙️→]/g,''));
+          taskCount++;
+          document.getElementById('taskCount').textContent = taskCount;
+          addRecentTask(data.command);
+        } else if (data.type === 'connected') {
+          console.log('Agent:', data.message);
+        }
+      } catch(err) { console.log(err); }
+    };
+
+    ws.onclose = () => {
+      wsConnected = false;
+      setAgentStatus(false);
+      // Retry every 5 seconds
+      setTimeout(connectAgent, 5000);
+    };
+
+    ws.onerror = () => {
+      wsConnected = false;
+      setAgentStatus(false);
+    };
+  } catch(e) {
+    setTimeout(connectAgent, 5000);
+  }
+}
+
+function setAgentStatus(online) {
+  const pill = document.getElementById('agentPill');
+  const badge = document.getElementById('agentBadge');
+  const pillText = document.getElementById('agentPillText');
+  const badgeText = document.getElementById('agentBadgeText');
+  const mAgent = document.getElementById('mAgent');
+
+  if (online) {
+    pill.style.borderColor = 'var(--accent3)'; pill.style.color = 'var(--accent3)';
+    pillText.textContent = 'AGENT ONLINE';
+    badge.className = 'agent-badge connected';
+    badge.querySelector('span').textContent = '🟢';
+    badgeText.textContent = 'Desktop Agent: Connected';
+    mAgent.textContent = 'ONLINE';
+  } else {
+    pill.style.borderColor = 'var(--text-dim)'; pill.style.color = 'var(--text-dim)';
+    pillText.textContent = 'AGENT OFFLINE';
+    badge.className = 'agent-badge disconnected';
+    badge.querySelector('span').textContent = '🔌';
+    badgeText.textContent = 'Desktop Agent: Offline';
+    mAgent.textContent = 'OFFLINE';
+  }
+}
+
+function sendToAgent(command) {
+  if (wsConnected && ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'command', command }));
+    return true;
+  }
+  return false;
+}
+
+// ════════════════════════════════════════════
+// SPEECH RECOGNITION
+// ════════════════════════════════════════════
+function initSpeech() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('voiceStatusText').textContent = 'Voice not supported — use text input';
+    return null;
+  }
+  const r = new SR();
+  r.continuous = true; r.interimResults = true; r.lang = 'en-IN';
+
+  r.onstart = () => {
+    setWaves(true);
+    document.getElementById('voiceStatusText').textContent = 'LISTENING · Say "Hi Kishor"...';
+  };
+
+  r.onresult = (ev) => {
+    let interim='', final='';
+    for (let i=ev.resultIndex; i<ev.results.length; i++) {
+      const t=ev.results[i][0].transcript;
+      if (ev.results[i].isFinal) final+=t; else interim+=t;
+    }
+    document.getElementById('transcriptText').textContent = final||interim;
+    if (!isActivated && (final||interim).toLowerCase().includes('hi kishor')) activate();
+    else if (isActivated && final.trim()) processCmd(final.trim());
+  };
+
+  r.onerror = (ev) => {
+    if (ev.error==='no-speech') return;
+    document.getElementById('voiceStatusText').textContent = 'Mic error: '+ev.error;
+  };
+
+  r.onend = () => {
+    setWaves(false);
+    if (isListening) setTimeout(()=>{ try{r.start()}catch(e){} }, 300);
+  };
+
+  return r;
+}
+
+function setWaves(on) {
+  for(let i=1;i<=7;i++) {
+    const el=document.getElementById('w'+i);
+    on ? el.classList.add('active') : el.classList.remove('active');
+  }
+}
+
+function activate() {
+  isActivated = true;
+  document.getElementById('voiceBtn').classList.add('active');
+  document.getElementById('voiceStatusText').textContent = '✅ ACTIVATED · Give your command...';
+  speak('Hello! I am Kishor. How can I help you?');
+  addMsg('kishor', "I'm awake! What would you like me to do?");
+  showToast('🟢 Kishor Activated!');
+  setTimeout(()=>{
+    if(isActivated){ isActivated=false; document.getElementById('voiceBtn').classList.remove('active'); document.getElementById('voiceStatusText').textContent='Timed out. Say "Hi Kishor" again.'; }
+  }, 25000);
+}
+
+function toggleVoice() {
+  if (!recognition) recognition = initSpeech();
+  if (!recognition) { showToast('⚠️ Voice API not supported'); return; }
+  if (isListening) {
+    isListening=false; isActivated=false;
+    recognition.stop();
+    document.getElementById('voiceBtn').classList.remove('active','processing');
+    document.getElementById('micIcon').textContent='🎙️';
+    document.getElementById('voiceStatusText').textContent='Voice stopped. Click to restart.';
+    setWaves(false); showToast('🔇 Mic off');
+  } else {
+    isListening=true;
+    try{ recognition.start(); document.getElementById('micIcon').textContent='🔴'; showToast('🎙️ Mic ON'); }catch(e){}
+  }
+}
+
+// ════════════════════════════════════════════
+// COMMAND PROCESSING
+// ════════════════════════════════════════════
+async function processCmd(text) {
+  isActivated=false;
+  document.getElementById('voiceBtn').classList.remove('active');
+  document.getElementById('voiceBtn').classList.add('processing');
+  document.getElementById('micIcon').textContent='⏳';
+
+  addMsg('user', text);
+  addTyping();
+
+  // Send to Python agent first
+  const sentToAgent = sendToAgent(text);
+
+  if (!sentToAgent) {
+    // Fallback: handle in browser
+    setTimeout(async ()=>{
+      removeTyping();
+      const response = await browserFallback(text);
+      addMsg('kishor', response, true);
+      speak(response.replace(/[✅⚠️📁💻🔋🔊📧📸🌤️🤔]/g,''));
+      taskCount++;
+      document.getElementById('taskCount').textContent = taskCount;
+      addRecentTask(text);
+      document.getElementById('voiceBtn').classList.remove('processing');
+      document.getElementById('micIcon').textContent='🔴';
+    }, 1000);
+  } else {
+    // Agent will respond via WebSocket
+    setTimeout(()=>{
+      document.getElementById('voiceBtn').classList.remove('processing');
+      document.getElementById('micIcon').textContent='🔴';
+    }, 500);
+  }
+}
+
+async function browserFallback(cmd) {
+  const t = cmd.toLowerCase();
+  if (t.includes('time')||t.includes('date')) return `🕐 ${new Date().toLocaleString('en-IN',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})}`;
+  if (t.includes('weather')) { window.open('https://wttr.in','_blank'); return '🌤️ Opened weather in new tab'; }
+  if (t.includes('youtube')) { window.open('https://youtube.com','_blank'); return '▶️ Opened YouTube'; }
+  if (t.includes('search')||t.includes('google')) {
+    const q=t.replace(/search|google|for|the web/gi,'').trim();
+    window.open(`https://www.google.com/search?q=${encodeURIComponent(q||cmd)}`, '_blank');
+    return `🔍 Searched Google for: "${q||cmd}"`;
+  }
+  if (t.includes('email')||t.includes('gmail')) { window.open('https://mail.google.com','_blank'); return '📧 Opened Gmail'; }
+  if (t.includes('help')) return '💡 Commands: open browser, search [query], open youtube, check email, weather, time, screenshot, system info, volume up/down, open [app name]. Start kishor_server.py for full desktop control!';
+  return await callClaude(cmd);
+}
+
+async function callClaude(cmd) {
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514", max_tokens:300,
+        system:"You are Kishor, a concise AI desktop assistant. Reply in 1-2 sentences, action-focused.",
+        messages:[{role:"user",content:cmd}]
+      })
+    });
+    const d = await r.json();
+    return d.content?.map(i=>i.text||'').join('')||"I'll handle that right away.";
+  } catch(e) {
+    return "Start kishor_server.py to enable full desktop control!";
+  }
+}
+
+// ════════════════════════════════════════════
+// CHAT UI
+// ════════════════════════════════════════════
+function addMsg(role, text, isResult=false) {
+  const log = document.getElementById('chatLog');
+  const now = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+
+  if (role==='kishor') {
+    const badge = isResult && wsConnected ? `<div class="result-badge">AGENT EXECUTED</div><br>` : '';
+    div.innerHTML=`
+      <div class="msg-avatar"><img src="${AVATAR_SVG}" alt="K"></div>
+      <div><div class="msg-label">KISHOR · ${now}</div>
+      <div class="msg-bubble">${badge}${text}</div></div>`;
+  } else {
+    div.innerHTML=`
+      <div><div class="msg-label" style="text-align:right">YOU · ${now}</div>
+      <div class="msg-bubble">${text}</div></div>
+      <div class="msg-user-icon">👤</div>`;
+  }
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function addTyping() {
+  const log=document.getElementById('chatLog');
+  const d=document.createElement('div');
+  d.className='chat-msg kishor'; d.id='typing';
+  d.innerHTML=`<div class="msg-avatar"><img src="${AVATAR_SVG}" alt="K"></div>
+    <div><div class="msg-label">KISHOR · PROCESSING</div>
+    <div class="msg-bubble"><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div>`;
+  log.appendChild(d); log.scrollTop=log.scrollHeight;
+}
+function removeTyping() { document.getElementById('typing')?.remove(); }
+
+// ════════════════════════════════════════════
+// TEXT INPUT
+// ════════════════════════════════════════════
+function sendTextCommand() {
+  const el=document.getElementById('cmdInput');
+  const cmd=el.value.trim(); if(!cmd) return;
+  el.value='';
+  if(cmd.toLowerCase().includes('hi kishor')) { activate(); return; }
+  processCmd(cmd);
+}
+function handleKey(e) { if(e.key==='Enter') sendTextCommand(); }
+function runCmd(cmd) { document.getElementById('cmdInput').value=cmd; sendTextCommand(); }
+
+// ════════════════════════════════════════════
+// TTS
+// ════════════════════════════════════════════
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text.substring(0,200));
+  u.rate=0.95; u.pitch=1.0; u.lang='en-IN';
+  const voices=window.speechSynthesis.getVoices();
+  const v=voices.find(v=>v.lang.includes('en-IN'))||voices.find(v=>v.lang.includes('en'))||voices[0];
+  if(v) u.voice=v;
+  window.speechSynthesis.speak(u);
+}
+
+// ════════════════════════════════════════════
+// RECENT TASKS
+// ════════════════════════════════════════════
+function addRecentTask(cmd) {
+  recentTasks.unshift({cmd:cmd.substring(0,28)+(cmd.length>28?'...':''),time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})});
+  if(recentTasks.length>6) recentTasks.pop();
+  document.getElementById('recentTasks').innerHTML=recentTasks.map(t=>`
+    <div style="padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+      <span style="color:var(--accent3)">›</span> ${t.cmd}
+      <span style="float:right">${t.time}</span>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none', 3000);
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+window.addEventListener('load', ()=>{
+  recognition = initSpeech();
+  if(window.speechSynthesis) {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();
+  }
+  setTimeout(()=>speak("Hello, I am Kishor, your AI desktop assistant. Say Hi Kishor to activate me."), 1500);
+  connectAgent(); // Try to connect to Python backend
+  showToast('🤖 Kishor AI Ready!');
+});
+
+document.addEventListener('keydown', e=>{ if(e.ctrlKey&&e.key==='k'){e.preventDefault();toggleVoice();} });
+</script>
+</body>
+</html>
